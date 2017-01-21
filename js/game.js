@@ -29,7 +29,7 @@ const stage3List = [
 ];
 
 function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 class State extends Phaser.State {
@@ -42,10 +42,12 @@ class State extends Phaser.State {
     game.load.image('knife', 'assets/sprites/knife.png');
     game.load.image('fireball1', 'assets/sprites/energyball1.png');
     game.load.image('fireball2', 'assets/sprites/energyball2.png');
+    game.load.atlasJSONHash('boss_ani', 'assets/sprites/boss_ani.png', 'assets/sprites/boss_ani.json');
   }
 
 
   create() {
+    this.setUpKeyboard();
     game.add.tileSprite(0, 0, 1280, 720, 'background');
 
     this.lifeText = game.add.text(20, 20, "4", {
@@ -104,6 +106,7 @@ class State extends Phaser.State {
     this.musicFloorCollisionGroup = game.physics.p2.createCollisionGroup();
     this.deadCollisionGroup = game.physics.p2.createCollisionGroup();
     this.scrollCollisionGroup = game.physics.p2.createCollisionGroup();
+    this.bossCollisionGroup = game.physics.p2.createCollisionGroup();
 
     // to still collide with the world bounds
     game.physics.p2.updateBoundsCollisionGroup();
@@ -129,7 +132,7 @@ class State extends Phaser.State {
 
     this.player.body.setCollisionGroup(this.playerCollisionGroup);
     this.player.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
-    this.player.body.collides([this.deadCollisionGroup, this.scrollCollisionGroup]);
+    this.player.body.collides([this.deadCollisionGroup, this.scrollCollisionGroup, this.bossCollisionGroup]);
 
 
     //  Check for the block hitting another object
@@ -144,12 +147,37 @@ class State extends Phaser.State {
     soundModule.signal.add((...params) => { this.onSound(...params); });
   }
 
+  setUpKeyboard() {
+    this.numKeys = [];
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.ONE) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.TWO) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.THREE) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.FOUR) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.FIVE) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.SIX) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.SEVEN) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.EIGHT) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.NINE) });
+    this.numKeys.push({ key: game.input.keyboard.addKey(Phaser.Keyboard.ZERO) });
+    this.numKeys.forEach((keyObj, index) => {
+      keyObj.key.onDown.add(() => {
+        this.onKeyCheat(index);
+      }, this);
+    });
+  }
+
+  onKeyCheat(index) {
+    console.log('onKeyCheat', index);
+    if (window.location.href.split('?')[1] == 'c') {
+      this.onSound(index, 0, 40, 0);
+    }
+  }
+
   setPlayerSuper() {
     var that = this;
     this.playerSuper = true;
     this.superTimer = setTimeout(function () { that.playerSuper = false; }, SUPER_COOL_DOWN);
   }
-
 
   setKnifeTimeout() {
     var that = this;
@@ -171,6 +199,7 @@ class State extends Phaser.State {
     output.push(scroll);
     this.knifeEnabled = true;
     //this.createFireballs();
+
     return output
   }
 
@@ -209,6 +238,7 @@ class State extends Phaser.State {
     scroll.body.setCollisionGroup(this.scrollCollisionGroup);
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
+    this.createBoss(1230, 360);
     return output
   }
 
@@ -240,15 +270,15 @@ class State extends Phaser.State {
     return output
   }
 
-  createFireballs(no_of_fireballs=-1) {
+  createFireballs(no_of_fireballs = -1) {
     var count = 0;
     var sprFlag = 0;
-    function make_fire_ball(){
-      const y_index  = getRandomInt(0,11);
-      const fireball = game.add.sprite(game.width, indexToGameHeight(y_index), sprFlag ? 'fireball1': 'fireball2');
+    function make_fire_ball() {
+      const y_index = getRandomInt(0, 11);
+      const fireball = game.add.sprite(game.width, indexToGameHeight(y_index), sprFlag ? 'fireball1' : 'fireball2');
       sprFlag = !sprFlag;
       game.physics.p2.enable(fireball);
-      fireball.body.kinematic=true;
+      fireball.body.kinematic = true;
       fireball.body.setCollisionGroup(that.deadCollisionGroup);
       fireball.body.collides(that.playerCollisionGroup);
       fireball.body.moveLeft(256);
@@ -371,7 +401,7 @@ class State extends Phaser.State {
       console.log("scroll");
       this.getScroll();
       body.sprite.destroy();
-    } if (body && body.sprite && (body.sprite.key === 'fireball1' ||  body.sprite.key === 'fireball2') && !this.playerSuper ) {
+    } if (body && body.sprite && (body.sprite.key === 'fireball1' || body.sprite.key === 'fireball2') && !this.playerSuper) {
       console.log("fireball");
       this.player.lifeCount--;
       this.lifeText.setText(this.player.lifeCount);
@@ -445,11 +475,11 @@ class State extends Phaser.State {
 
     const normalized0 = y0Pitch;
     const normalized1 = y1Pitch;
-    var index = Math.round(normalized0) % NUMBER_OF_PITCH + 4;
+    var index = Math.round(normalized0) % NUMBER_OF_PITCH;
     var index1 = Math.round(normalized1) % NUMBER_OF_PITCH;
     //var singIndex = Math.round(normalized0 * 11);
     // console.log('noteStrings', soundModule.noteStrings[index]);
-    //console.log('onSound',
+    console.log('onSound', index);
     // normalized0, soundModule.noteStrings[singIndex],
     // normalized1, '');
     this.musicFloors.forEach((elem, id) => {
@@ -505,6 +535,28 @@ class State extends Phaser.State {
     wall.body.setCollisionGroup(this.musicFloorCollisionGroup);
     wall.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
     return wall;
+  }
+
+  createBoss(x, y) {
+    const obstacleBMD = game.add.bitmapData(560, 437);
+    obstacleBMD.ctx.rect(0, 0, 560, 437);
+    obstacleBMD.ctx.fillStyle = '#000';
+    obstacleBMD.ctx.fill();
+
+    var boss = game.add.sprite(x, y, obstacleBMD);
+    game.physics.p2.enable(boss);
+    boss.body.kinematic = true;
+
+    boss.body.setCollisionGroup(this.bossCollisionGroup);
+    boss.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
+
+    var bossSprite = game.add.sprite(0, 0, 'boss_ani', 'Comp1_00000');
+    bossSprite.anchor.setTo(0.5);
+    body.setRectangle(560, 437)
+    boss.addChild(bossSprite);
+
+    this.createFireballs();
+
   }
 }
 
