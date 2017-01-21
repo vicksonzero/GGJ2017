@@ -94,7 +94,7 @@ class State extends Phaser.State {
     //   const wall = this.createWall(100 * i, 500);
     // }
     this.musicFloors = [];
-    const wall = this.createWall(PLATFORM_WIDTH / 2, 500);
+    const wall = this.createWall(PLATFORM_WIDTH / 2, 400);
     var currentMusicX = PLATFORM_WIDTH * 1.5;
     while (currentMusicX < game.width) {
       const musicFloor = this.createMusicFloor(currentMusicX, 500);
