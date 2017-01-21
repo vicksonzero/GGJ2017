@@ -11,8 +11,21 @@ const KNIFE_COOL_DOWN = 5000;
 
 function indexToGameHeight(index) {
   var total = game.height - 160;
-  return index*total/NUMBER_OF_PITCH;
+  return index * total / NUMBER_OF_PITCH;
 }
+
+let stageID = 0;
+const stageList = [
+  'setup_level_1',
+  'setup_level_2',
+  'setup_level_3',
+];
+
+const stage3List = [
+  'setup_level_3_stage_1',
+  'setup_level_3_stage_2',
+  'setup_level_3_stage_3',
+];
 
 class State extends Phaser.State {
   preload() {
@@ -97,7 +110,6 @@ class State extends Phaser.State {
     this.player.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
     this.player.body.collides([this.deadCollisionGroup, this.scrollCollisionGroup]);
 
-    this.player.scollGot = 0;
 
     //  Check for the block hitting another object
     this.player.body.onBeginContact.add(this.touchPlayer, this);
@@ -114,7 +126,7 @@ class State extends Phaser.State {
   setPlayerSuper() {
     var that = this;
     this.playerSuper = true;
-    this.superTimer = setTimeout(function(){that.playerSuper = false;}, SUPER_COOL_DOWN);
+    this.superTimer = setTimeout(function () { that.playerSuper = false; }, SUPER_COOL_DOWN);
   }
 
 
@@ -122,10 +134,11 @@ class State extends Phaser.State {
     var that = this;
     this.knifeIsCooldown = true;
     this.knife = null;
-    this.knifeTimer = setTimeout(function(){that.knifeIsCooldown = false;}, KNIFE_COOL_DOWN);
+    this.knifeTimer = setTimeout(function () { that.knifeIsCooldown = false; }, KNIFE_COOL_DOWN);
   }
 
   setup_level_1() {
+    console.log('setup_level_1');
     var output = [];
     var scroll = game.add.sprite(1130, 150, 'scroll');
     //  Enable if for physics. This creates a default rectangular body.
@@ -139,12 +152,13 @@ class State extends Phaser.State {
     return output
   }
 
-  setup_level_2 () {
+  setup_level_2() {
+    console.log('setup_level_2');
     var output = [];
 
-    var scrollCoord = [[1250,150],[830,400],[430,320]]
+    var scrollCoord = [[1250, 150], [830, 400], [430, 320]]
 
-    for(var i = 0; i < scrollCoord.length;i++){
+    for (var i = 0; i < scrollCoord.length; i++) {
       var scroll = game.add.sprite(scrollCoord[i][0], scrollCoord[i][1], 'scroll');
       //  Enable if for physics. This creates a default rectangular body.
       game.physics.p2.enable(scroll);
@@ -157,7 +171,13 @@ class State extends Phaser.State {
     return output
   }
 
-  setup_level_3_stage_1 () {
+  setup_level_3() {
+    console.log('setup_level_3');
+
+  }
+
+  setup_level_3_stage_1() {
+    console.log('setup_level_3_stage_1');
     var output = [];
     var scroll = game.add.sprite(230, 150, 'scroll');
     //  Enable if for physics. This creates a default rectangular body.
@@ -170,7 +190,8 @@ class State extends Phaser.State {
     return output
   }
 
-  setup_level_3_stage_2 () {
+  setup_level_3_stage_2() {
+    console.log('setup_level_3_stage_2');
     var output = [];
     var scroll = game.add.sprite(430, 280, 'scroll');
     //  Enable if for physics. This creates a default rectangular body.
@@ -183,7 +204,8 @@ class State extends Phaser.State {
     return output
   }
 
-  setup_level_3_stage_3 () {
+  setup_level_3_stage_3() {
+    console.log('setup_level_3_stage_3');
     var output = [];
     var scroll = game.add.sprite(830, 380, 'scroll');
     //  Enable if for physics. This creates a default rectangular body.
@@ -199,7 +221,7 @@ class State extends Phaser.State {
   createKnife(y_index) {
     const knife = game.add.sprite(game.width, indexToGameHeight(y_index), 'knife');
     game.physics.p2.enable(knife);
-    knife.body.kinematic=true;
+    knife.body.kinematic = true;
     knife.body.setCollisionGroup(this.deadCollisionGroup);
     knife.body.collides(this.playerCollisionGroup);
     knife.body.moveLeft(256);
@@ -208,14 +230,14 @@ class State extends Phaser.State {
 
   moveKnife(y_index) {
     if (this.knife) {
-      this.knife.body.y= (this.knife.body.y + indexToGameHeight(y_index)) / 2;
+      this.knife.body.y = (this.knife.body.y + indexToGameHeight(y_index)) / 2;
     }
   }
 
   setupDeadZones() {
     var currentX = 0;
     var output = [];
-    const deadline_y = game.height - DEADLINE_HEIGHT/2;
+    const deadline_y = game.height - DEADLINE_HEIGHT / 2;
     while (currentX < game.width) {
       var deadzone = game.add.sprite(currentX, deadline_y, 'spears');
       deadzone.anchor.setTo(0, 0);
@@ -264,7 +286,7 @@ class State extends Phaser.State {
       this.player.body.moveUp(300);
       this.jumpTimer = game.time.now + 750;
     }
-    if(this.knife && this.knife.x <0){
+    if (this.knife && this.knife.x < 0) {
       this.knife.destroy();
       this.setKnifeTimeout();
     }
@@ -295,9 +317,9 @@ class State extends Phaser.State {
   }
 
   touchPlayer(body, bodyB, shapeA, shapeB, equation) {
-    console.log("touchPlayer");
-    if (body && body.sprite && (body.sprite.key === 'spears' ||  body.sprite.key === 'knife') && !this.playerSuper ) {
-      console.log("spears");
+    // console.log("touchPlayer");
+    if (body && body.sprite && (body.sprite.key === 'spears' || body.sprite.key === 'knife') && !this.playerSuper) {
+      console.log("spears or knife");
       this.player.lifeCount--;
       this.lifeText.setText(this.player.lifeCount);
       this.player.body.y = 30;
@@ -342,11 +364,13 @@ class State extends Phaser.State {
 
   nextRoom() {
     console.log('nextRoom');
+    stageID++;
+    this.scrolls = this[stageList[stageID]]();
   }
 
   checkLose() {
-    if (0 >= this.player.lifeCount) {
-      //lose
+    if (this.player.lifeCount <= 0) {
+      this.lose();
     }
   }
 
