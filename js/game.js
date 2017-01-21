@@ -8,7 +8,7 @@ const PLAYER_CHEAT_LIFE_COUNT = 4000;
 const NUMBER_OF_PITCH = 13;
 const SUPER_COOL_DOWN = 2;
 const KNIFE_COOL_DOWN = 5000;
-
+const FIREBALL_INTERVAL = 3000;
 
 function indexToGameHeight(index) {
   var total = game.height - 160;
@@ -28,6 +28,10 @@ const stage3List = [
   'setup_level_3_stage_3',
 ];
 
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 class State extends Phaser.State {
   preload() {
     game.load.image('character', 'assets/sprites/character.png');
@@ -36,6 +40,8 @@ class State extends Phaser.State {
     game.load.image('spears', 'assets/sprites/spikes.png');
     game.load.image('scroll', 'assets/sprites/scroll.png');
     game.load.image('knife', 'assets/sprites/knife.png');
+    game.load.image('fireball1', 'assets/sprites/energyball1.png');
+    game.load.image('fireball2', 'assets/sprites/energyball2.png');
   }
 
 
@@ -164,6 +170,7 @@ class State extends Phaser.State {
     scroll.body.collides([this.playerCollisionGroup]);
     output.push(scroll);
     this.knifeEnabled = true;
+    //this.createFireballs();
     return output
   }
 
@@ -231,6 +238,27 @@ class State extends Phaser.State {
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
     return output
+  }
+
+  createFireballs(no_of_fireballs=-1) {
+    var count = 0;
+    var sprFlag = 0;
+    function make_fire_ball(){
+      const y_index  = getRandomInt(0,11);
+      const fireball = game.add.sprite(game.width, indexToGameHeight(y_index), sprFlag ? 'fireball1': 'fireball2');
+      sprFlag = !sprFlag;
+      game.physics.p2.enable(fireball);
+      fireball.body.kinematic=true;
+      fireball.body.setCollisionGroup(that.deadCollisionGroup);
+      fireball.body.collides(that.playerCollisionGroup);
+      fireball.body.moveLeft(256);
+      that.fireballs.push(fireball);
+      if (no_of_fireballs < 0 || count < no_of_fireballs) that.fireballTimer = setTimeout(make_fire_ball, FIREBALL_INTERVAL);
+      count++;
+    }
+    var that = this;
+    if (!this.fireballs) this.fireballs = [];
+    this.fireballTimer = setTimeout(make_fire_ball, FIREBALL_INTERVAL);
   }
 
   createKnife(y_index) {
@@ -343,6 +371,13 @@ class State extends Phaser.State {
       console.log("scroll");
       this.getScroll();
       body.sprite.destroy();
+    } if (body && body.sprite && (body.sprite.key === 'fireball1' ||  body.sprite.key === 'fireball2') && !this.playerSuper ) {
+      console.log("fireball");
+      this.player.lifeCount--;
+      this.lifeText.setText(this.player.lifeCount);
+      this.player.body.y = 30;
+      body.sprite.destroy();
+      this.checkLose();
     }
   }
 
