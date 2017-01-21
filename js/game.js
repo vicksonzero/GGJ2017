@@ -19,10 +19,6 @@ let stageID = 0;
 const stageList = [
   'setup_level_1',
   'setup_level_2',
-  // 'setup_level_3',
-];
-
-const stage3List = [
   'setup_level_3_stage_1',
   'setup_level_3_stage_2',
   'setup_level_3_stage_3',
@@ -538,25 +534,14 @@ class State extends Phaser.State {
   }
 
   createBoss(x, y) {
-    const obstacleBMD = game.add.bitmapData(560, 437);
-    obstacleBMD.ctx.rect(0, 0, 560, 437);
-    obstacleBMD.ctx.fillStyle = '#000';
-    obstacleBMD.ctx.fill();
-
-    var boss = game.add.sprite(x, y, obstacleBMD);
+    var boss = game.add.sprite(x, y, 'boss_ani', 'Comp1_00000');
     game.physics.p2.enable(boss);
+    boss.body.setRectangle(560, 437);
     boss.body.kinematic = true;
 
     boss.body.setCollisionGroup(this.bossCollisionGroup);
     boss.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
-
-    var bossSprite = game.add.sprite(0, 0, 'boss_ani', 'Comp1_00000');
-    bossSprite.anchor.setTo(0.5);
-    body.setRectangle(560, 437)
-    boss.addChild(bossSprite);
-
     this.createFireballs();
-
   }
 }
 
