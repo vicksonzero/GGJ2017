@@ -4,6 +4,7 @@ var yAxis = p2.vec2.fromValues(0, 1);
 const DEADLINE_HEIGHT = 160;
 const PLATFORM_WIDTH = 100;
 const PLAYER_INIT_LIFE_COUNT = 4;
+const PLAYER_CHEAT_LIFE_COUNT = 4000;
 const NUMBER_OF_PITCH = 12;
 const SUPER_COOL_DOWN = 2;
 const KNIFE_COOL_DOWN = 5000;
@@ -103,6 +104,8 @@ class State extends Phaser.State {
 
     this.player = game.add.sprite(PLATFORM_WIDTH / 2, 300, 'character');
     this.player.lifeCount = PLAYER_INIT_LIFE_COUNT;
+    if (window.location.href.split('?')[1]=='c'){ this.player.lifeCount = PLAYER_CHEAT_LIFE_COUNT; }
+
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(this.player);
 
@@ -334,6 +337,8 @@ class State extends Phaser.State {
   getScroll(sprite1, sprite2) {
     this.player.scollGot++;
     this.gotScrollText.setText(this.player.scollGot);
+    console.log('getScroll', this.player.scollGot, this.scrollGoal);
+
     if (this.player.scollGot >= this.scrollGoal) {
       this.win();
     }
@@ -366,6 +371,7 @@ class State extends Phaser.State {
     console.log('nextRoom');
     stageID++;
     this.scrolls = this[stageList[stageID]]();
+    this.scrollGoal = this.scrolls.length;
   }
 
   checkLose() {
@@ -375,7 +381,7 @@ class State extends Phaser.State {
   }
 
   onSound(y0Pitch, y1Pitch, y0Amplitude, y1Amplitude) {
-    console.log(y0Pitch + " " + y1Pitch);
+    // console.log(y0Pitch + " " + y1Pitch);
     const normalized0 = y0Pitch ;
     const normalized1 = y1Pitch ;
     var index = Math.round(normalized0 * NUMBER_OF_PITCH) % NUMBER_OF_PITCH;
