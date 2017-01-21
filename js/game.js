@@ -5,7 +5,7 @@ const DEADLINE_HEIGHT = 160;
 const PLATFORM_WIDTH = 100;
 const PLAYER_INIT_LIFE_COUNT = 4;
 const PLAYER_CHEAT_LIFE_COUNT = 4000;
-const NUMBER_OF_PITCH = 12;
+const NUMBER_OF_PITCH = 13;
 const SUPER_COOL_DOWN = 2;
 const KNIFE_COOL_DOWN = 5000;
 
@@ -19,7 +19,7 @@ let stageID = 0;
 const stageList = [
   'setup_level_1',
   'setup_level_2',
-  'setup_level_3',
+  // 'setup_level_3',
 ];
 
 const stage3List = [
@@ -58,14 +58,26 @@ class State extends Phaser.State {
     });
     this.gotScrollText.anchor.setTo(1, 0);
 
-    this.winlText = game.add.text(game.width / 2, game.height / 2, "You Win!", {
+    this.winText = game.add.text(game.width / 2, game.height / 2, "You Win!", {
       font: "60px Arial black",
       fill: "#00ff44",
-      stroke: "#00ff44",
-      align: "center"
+      stroke: "#118e00",
+      strokeThickness: 2,
+      align: "center",
     });
-    this.winlText.anchor.setTo(0.5);
-    this.winlText.visible = false;
+    this.winText.anchor.setTo(0.5);
+    this.winText.visible = false;
+
+    this.finishWinText = game.add.text(game.width / 2, game.height / 2, "All Cleared!\nYou Win!", {
+      font: "60px Arial black",
+      fill: "#00ff44",
+      stroke: "#118e00",
+      strokeThickness: 2,
+      align: "center",
+    });
+    this.finishWinText.anchor.setTo(0.5);
+    this.finishWinText.visible = false;
+
 
     game.stage.backgroundColor = "#4488AA";
 
@@ -104,7 +116,7 @@ class State extends Phaser.State {
 
     this.player = game.add.sprite(PLATFORM_WIDTH / 2, 300, 'character');
     this.player.lifeCount = PLAYER_INIT_LIFE_COUNT;
-    if (window.location.href.split('?')[1]=='c'){ this.player.lifeCount = PLAYER_CHEAT_LIFE_COUNT; }
+    if (window.location.href.split('?')[1] == 'c') { this.player.lifeCount = PLAYER_CHEAT_LIFE_COUNT; }
 
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(this.player);
@@ -346,10 +358,18 @@ class State extends Phaser.State {
 
   win() {
     console.log('win');
-    this.winlText.visible = true;
+
+    if (stageID + 1 >= stageList.length) {
+      console.log('no more levels');
+      this.finish();
+      return;
+    }
+
+
+    this.winText.visible = true;
 
     setTimeout(() => {
-      this.winlText.visible = false;
+      this.winText.visible = false;
 
       this.cleanUp();
 
@@ -380,31 +400,36 @@ class State extends Phaser.State {
     }
   }
 
+  finish() {
+    this.finishWinText.visible = true;
+    this.cleanUp();
+  }
+
   onSound(y0Pitch, y1Pitch, y0Amplitude, y1Amplitude) {
     // console.log(y0Pitch + " " + y1Pitch);
-    const normalized0 = y0Pitch ;
-    const normalized1 = y1Pitch ;
-    var index = Math.round(normalized0 * NUMBER_OF_PITCH) % NUMBER_OF_PITCH;
-    var index1 = Math.round(normalized1 * NUMBER_OF_PITCH) % NUMBER_OF_PITCH;
+
+    const normalized0 = y0Pitch;
+    const normalized1 = y1Pitch;
+    var index = Math.round(normalized0) % NUMBER_OF_PITCH + 4;
+    var index1 = Math.round(normalized1) % NUMBER_OF_PITCH;
     //var singIndex = Math.round(normalized0 * 11);
     // console.log('noteStrings', soundModule.noteStrings[index]);
     //console.log('onSound',
     // normalized0, soundModule.noteStrings[singIndex],
     // normalized1, '');
     this.musicFloors.forEach((elem, id) => {
-      if (Math.abs(id - index) < 3) {
+      if (index !== 0 && Math.abs(id - index) < 2) {
         // const heightLimit = 500 - y0Amplitude * 70;
         const heightLimit = 500 - 400;
         if (elem.y > heightLimit) {
-          elem.body.moveUp(300);
+          // console.log('y0Amplitude', y0Amplitude);
+
+          elem.body.moveUp(300 * (y0Amplitude - 8) / 20);
         } else {
           elem.body.y = heightLimit;
           elem.body.setZeroVelocity();
         }
-        elem.loadTexture('wall');
       } else {
-        elem.loadTexture('wall');
-
         if (elem.y < game.height - DEADLINE_HEIGHT) {
           elem.body.moveDown(80);
         } else if (elem.y < game.height) {
