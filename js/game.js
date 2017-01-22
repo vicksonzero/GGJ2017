@@ -23,6 +23,7 @@ const stageList = [
   'setup_level_3_stage_1',
   'setup_level_3_stage_2',
   'setup_level_3_stage_3',
+  'setup_level_3_stage_4',
 ];
 
 function getRandomInt(min, max) {
@@ -41,6 +42,7 @@ class State extends Phaser.State {
     game.load.image('fireball2', 'assets/sprites/energyball2.png');
     game.load.image('arrowHint', 'assets/sprites/arrowKeys.png');
     game.load.image('micHint', 'assets/sprites/mic.png');
+    game.load.image('redArrow', 'assets/sprites/redArrow.png');
     game.load.atlasJSONHash('boss_ani', 'assets/sprites/boss_ani.png', 'assets/sprites/boss_ani.json');
   }
 
@@ -71,7 +73,7 @@ class State extends Phaser.State {
 
     this.musicNoteText = game.add.text(20, game.height - 32, "4", {
       font: "24px Arial black",
-      fill: "#ff0044",
+      fill: "#000000",
       align: "center"
     });
 
@@ -181,7 +183,7 @@ class State extends Phaser.State {
     if (this.micHintTimer) clearTimeout(this.micHintTimer);
     this.intervalTimer = setInterval(() => {
       this.micHint.visible = !this.micHint.visible;
-      
+
     }, 1000);
     setTimeout(() => {
       clearInterval(this.intervalTimer);
@@ -299,11 +301,6 @@ class State extends Phaser.State {
     return output
   }
 
-  setup_level_3() {
-    console.log('setup_level_3');
-
-  }
-
   setup_level_3_stage_1() {
     console.log('setup_level_3_stage_1');
     var output = [];
@@ -354,6 +351,18 @@ class State extends Phaser.State {
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
     roundEndText = 'Follow the arrow.';
+    return output
+  }
+
+  setup_level_3_stage_4() {
+    console.log('setup_level_3_stage_4');
+    var output = [];
+    this.boss.loadTexture('boss_ani', 'Comp1_00029');
+    this.boss.body.angle = 30;
+    this.boss.body.setRectangle(300, 300);
+
+    this.createExit(990, 470);
+    roundEndText = 'Mission accomplished.';
     return output
   }
 
@@ -458,7 +467,10 @@ class State extends Phaser.State {
     if (this.cursors.up.isDown && game.time.now > this.jumpTimer && this.checkIfCanJump()) {
       this.player.body.moveUp(300);
       this.jumpTimer = game.time.now + 750;
+    } else if (this.cursors.up.isUp && game.time.now < this.jumpTimer && this.player.body.velocity.y < 0) {
+      this.player.body.velocity.y = 0;
     }
+
     if (this.knife && this.knife.x < 0) {
       this.knife.destroy();
       this.setKnifeTimeout();
@@ -500,13 +512,21 @@ class State extends Phaser.State {
       console.log("scroll");
       this.getScroll();
       body.sprite.destroy();
-    } if (body && body.sprite && (body.sprite.key === 'fireball1' || body.sprite.key === 'fireball2') && !this.playerSuper) {
+    }
+    if (body && body.sprite && (body.sprite.key === 'fireball1' || body.sprite.key === 'fireball2') && !this.playerSuper) {
       console.log("fireball");
       body.sprite.destroy();
       this.player.lifeCount--;
       this.lifeText.setText('Lives: ' + this.player.lifeCount);
       this.damageAndCheckLose();
     }
+    if (body && body.sprite && body.sprite.key === 'redArrow') {
+      console.log("redArrow");
+      this.player.kill();
+      body.sprite.destroy();
+      this.win();
+    }
+
   }
 
   getScroll(sprite1, sprite2) {
@@ -593,6 +613,15 @@ class State extends Phaser.State {
   finish() {
     this.playerSuper = true;
     this.finishWinText.visible = true;
+    setInterval(() => {
+      this.boss.body.angularVelocity += 1;
+      if(this.boss.scale.x >0){
+        this.boss.scale.setTo(this.boss.scale.x - 0.02);
+      }else{
+        this.boss.visible = false;
+      }
+    }, 100);
+    this.boss
     this.cleanUp();
   }
 
@@ -688,6 +717,19 @@ class State extends Phaser.State {
     boss.body.setCollisionGroup(this.bossCollisionGroup);
     boss.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
     this.createFireballs();
+    this.boss = boss;
+  }
+
+  createExit(x, y) {
+    const redArrow = game.add.sprite(x, y, 'redArrow');
+    redArrow.scale.setTo(0.1);
+    this.gameplayGroup.addChild(redArrow);
+    game.physics.p2.enable(redArrow);
+    redArrow.body.kinematic = true;
+    redArrow.body.setCollisionGroup(this.bossCollisionGroup);
+    redArrow.body.collides([this.playerCollisionGroup]);
+
+    return redArrow;
   }
 
   trasformBoss() {

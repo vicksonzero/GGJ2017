@@ -36,7 +36,7 @@
       margin: 0 auto;
     }
   </style>
-  <title>Jump.Wave</title>
+<title>Jump.Wave</title>
 </head>
 
 <body>
@@ -47,13 +47,13 @@
     <!-- <video height="0" id="localVideo" volume='0' ></video> -->
   </div>
   <div id="title" style="width:1280px; height: 720px; position: relative; background:url('assets/Opening/BG.png');">
-    <div id="startButton" style="width:421px; height: 339px; position: absolute; left: 429.5px;top: 0; background: url('assets/Opening/start.png');">
+<div id="startButton" style="width:421px; height: 339px; position: absolute; left: 429.5px;top: 0; background: url('assets/Opening/start.png');">
 
-    </div>
-    <div id="character" style="width:275px; height: 253px; position: absolute; left: 502.5px; bottom: 60px; background: url('assets/Opening/character.png');">
+</div>
+<div id="character" style="width:275px; height: 253px; position: absolute; left: 502.5px; bottom: 60px; background: url('assets/Opening/character.png');">
 
-    </div>
-  </div>
+</div>
+</div>
 <script src="js/phaser-custom.js"></script>
 <!-- <script src="js/speech.1.0.0.min.js"></script> -->
 <script src="js/sound.js"></script>
@@ -61,21 +61,28 @@
 <!-- <script src="js/speech.js"></script> -->
 <script>
   (function () {
-      /* global createPhaser */
-      var character = document.querySelector('#character');
-      var len = 321;
-      var progress = 0;
-      soundModule.signal.add((y0Pitch, y1Pitch, y0Amplitude, y1Amplitude) => {
-        if (y0Pitch > 0) {
-          progress += 0.05;
-          if (progress >= 1) {
-            soundModule.signal.removeAll();
-            createPhaser();
-          }
-          character.style.bottom = 60 + len * progress + 'px';
+    /* global createPhaser */
+    var character = document.querySelector('#character');
+    var len = 321;
+    var progress = 0;
+    soundModule.signal.add((y0Pitch, y1Pitch, y0Amplitude, y1Amplitude) => {
+      if (y0Pitch > 0) {
+        progress += 0.07;
+        if (progress >= 1) {
+          soundModule.signal.removeAll();
+          clearInterval(resetTimer);
+          createPhaser();
         }
-      });
-    } ());
+        character.style.bottom = 60 + len * progress + 'px';
+      }
+    });
+    var resetTimer = setInterval(() => {
+      if (parseFloat(character.style.bottom.split('px')[0]) > 60) {
+        progress -= 0.02;
+        character.style.bottom = 60 + len * progress + 'px';
+      }
+    },100);
+  } ());
 </script>
 </body>
 
