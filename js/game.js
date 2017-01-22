@@ -642,7 +642,7 @@ class State extends Phaser.State {
 
       if (index !== 0 && Math.abs(id - index) < 2) {
         // const heightLimit = 500 - y0Amplitude * 70;
-        console.log('up center id', id);
+        // console.log('up center id', id);
         const heightLimit = 500 - 400;
         if (elem.y > heightLimit) {
           // console.log('y0Amplitude', y0Amplitude);
@@ -665,7 +665,8 @@ class State extends Phaser.State {
         // elem.y = Phaser.Math.linear(elem.y, 500, 0.01);
       }
     });
-
+    console.log('normalized1', normalized1);
+    
     if (normalized1 > 0 && this.knifeEnabled) {
       if (!this.knife && !this.knifeIsCooldown) {
         this.createKnife(index1);
