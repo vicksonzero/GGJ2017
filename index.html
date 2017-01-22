@@ -4,41 +4,39 @@
 <head>
   <meta charset="UTF-8">
   <style type="text/css">
-html {
-	height: 100%;
-	background-color: black;
-}
+    html {
+      height: 100%;
+      background-color: black;
+    }
 
-body {
-	width: 100%;
-	height: inherit;
-	background-color: #999;
-}
+    body {
+      background-color: #999;
+    }
 
-h1, h2, label {
-  font-size: 3rem;
-  font-family: 'Nova Square', cursive;
-  text-align: center;
-  color: black;
-  text-shadow: -1px -1px 1px #aaa,
-               0px 1px 1px rgba(255,255,255,0.5),
-               1px 1px 2px rgba(255,255,255,0.7),
-               0px 0px 2px rgba(255,255,255,0.4);
-  margin: 0;
-}
+    h1, h2, label {
+      font-size: 3rem;
+      font-family: 'Nova Square', cursive;
+      text-align: center;
+      color: black;
+      text-shadow: -1px -1px 1px #aaa,
+                  0px 1px 1px rgba(255,255,255,0.5),
+                  1px 1px 2px rgba(255,255,255,0.7),
+                  0px 0px 2px rgba(255,255,255,0.4);
+      margin: 0;
+    }
 
-h1 {
-  font-size: 3.5rem;
-  padding-top: 1.2rem;
-}
+    h1 {
+      font-size: 3.5rem;
+      padding-top: 1.2rem;
+    }
 
-.wrapper {
-	height: 100%;
-	max-width: 800px;
-	margin: 0 auto;
-}
-</style>
-<title>Jump.Wave</title>
+    .wrapper {
+      height: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
+  <title>Jump.Wave</title>
 </head>
 
 <body>
@@ -48,11 +46,37 @@ h1 {
     <!--<canvas id="visualizer" width="800" height="600"></canvas>-->
     <!-- <video height="0" id="localVideo" volume='0' ></video> -->
   </div>
-  <script src="js/phaser-custom.js"></script>
-  <!-- <script src="js/speech.1.0.0.min.js"></script> -->
-  <script src="js/sound.js"></script>
-  <script src="js/game.js"></script>
-  <!-- <script src="js/speech.js"></script> -->
+  <div id="title" style="width:1280px; height: 720px; position: relative; background:url('assets/Opening/BG.png');">
+    <div id="startButton" style="width:421px; height: 339px; position: absolute; left: 429.5px;top: 0; background: url('assets/Opening/start.png');">
+
+    </div>
+    <div id="character" style="width:275px; height: 253px; position: absolute; left: 502.5px; bottom: 60px; background: url('assets/Opening/character.png');">
+
+    </div>
+  </div>
+<script src="js/phaser-custom.js"></script>
+<!-- <script src="js/speech.1.0.0.min.js"></script> -->
+<script src="js/sound.js"></script>
+<script src="js/game.js"></script>
+<!-- <script src="js/speech.js"></script> -->
+<script>
+  (function () {
+      /* global createPhaser */
+      var character = document.querySelector('#character');
+      var len = 321;
+      var progress = 0;
+      soundModule.signal.add((y0Pitch, y1Pitch, y0Amplitude, y1Amplitude) => {
+        if (y0Pitch > 0) {
+          progress += 0.05;
+          if (progress >= 1) {
+            soundModule.signal.removeAll();
+            createPhaser();
+          }
+          character.style.bottom = 60 + len * progress + 'px';
+        }
+      });
+    } ());
+</script>
 </body>
 
 </html>

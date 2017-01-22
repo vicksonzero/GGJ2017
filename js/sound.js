@@ -38,6 +38,7 @@ soundModule = (function () {
     //main block for doing the audio recording
 
     var audioSource = [];
+    var audioSourceExt = [];
 
     // not used
     var noteStrings = ["none", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -104,6 +105,7 @@ soundModule = (function () {
                 console.log(sourceInfo.id, sourceInfo.label || 'microphone');
 
                 audioSource.push(sourceInfo.id);
+                audioSourceExt.push(sourceInfo);
             }
         }
 
@@ -213,8 +215,8 @@ soundModule = (function () {
                 ac1 = (ac1 == -1) ? 0 : ac1;
 
                 var x = 0;
-                y0smoothingCache.push(noteFromPitch(ac0));
-                y1smoothingCache.push(noteFromPitch(ac1));
+                y0smoothingCache.push((ac0));
+                y1smoothingCache.push((ac1));
 
                 if (y0smoothingCache.length >= SMOOTH_TICK_COUNT) {
 
@@ -224,7 +226,9 @@ soundModule = (function () {
                     // );
                     // const y0Pitch = y[0] = sum / y0smoothingCache.length;
                     const smoothed0 = smoothOut(y0smoothingCache.slice(-SMOOTH_TICK_COUNT), 0.3);
-                    const y0Pitch = y[1] = smoothed0[smoothed0.length-1];
+                    const y0Pitch = y[1] = noteFromPitch(smoothed0[smoothed0.length-1]);
+                    
+
                     //console.log(y[0])
                     // y[0] *= canvas.height / 24;
                     // y0smoothingCache.length = 0;
@@ -233,7 +237,7 @@ soundModule = (function () {
                     // sum = y1smoothingCache.reduce((previous, current) => current += previous);
                     // const y1Pitch = y[1] = sum / y1smoothingCache.length;
                     const smoothed1 = smoothOut(y1smoothingCache.slice(-SMOOTH_TICK_COUNT), 0.85);
-                    const y1Pitch = y[1] = smoothed1[smoothed1.length-1];
+                    const y1Pitch = y[1] = noteFromPitch(smoothed1[smoothed1.length-1]);
                     
                     // y[1] *= canvas.height / 30;
                     // y1smoothingCache.length = 0;
@@ -365,6 +369,6 @@ soundModule = (function () {
 
     // event listeners to change visualize and voice settings
 
-    return { signal, noteStrings };
+    return { signal, noteStrings, audioSource: audioSourceExt };
 
 } ());

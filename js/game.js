@@ -9,13 +9,14 @@ const NUMBER_OF_PITCH = 13;
 const SUPER_COOL_DOWN = 2;
 const KNIFE_COOL_DOWN = 5000;
 const FIREBALL_INTERVAL = 3000;
+let roundEndText = '';
 
 function indexToGameHeight(index) {
   var total = game.height - 160;
   return index * total / NUMBER_OF_PITCH;
 }
 
-let stageID = 0;
+let stageID = -1;
 const stageList = [
   'setup_level_1',
   'setup_level_2',
@@ -38,13 +39,26 @@ class State extends Phaser.State {
     game.load.image('knife', 'assets/sprites/knife.png');
     game.load.image('fireball1', 'assets/sprites/energyball1.png');
     game.load.image('fireball2', 'assets/sprites/energyball2.png');
+    game.load.image('arrowHint', 'assets/sprites/arrowKeys.png');
+    game.load.image('micHint', 'assets/sprites/mic.png');
     game.load.atlasJSONHash('boss_ani', 'assets/sprites/boss_ani.png', 'assets/sprites/boss_ani.json');
   }
 
 
   create() {
     this.setUpKeyboard();
+    game.stage.backgroundColor = "#4488AA";
     game.add.tileSprite(0, 0, 1280, 720, 'background');
+
+    this.gameplayGroup = game.add.group();
+    this.uiGroup = game.add.group();
+
+    this.bloodBG = game.add.graphics(0, 0);
+    this.bloodBG.beginFill(0xFF0000, 0.2);
+    this.bloodBG.drawRect(0, 0, game.width, game.height);
+    this.bloodBG.endFill();
+    this.uiGroup.add(this.bloodBG);
+    this.bloodBG.visible = false;
 
     this.lifeText = game.add.text(20, 20, "4", {
       font: "30px Arial black",
@@ -53,7 +67,16 @@ class State extends Phaser.State {
     });
 
     this.lifeText.anchor.setTo(0, 0);
+    this.uiGroup.add(this.lifeText);
 
+    this.musicNoteText = game.add.text(20, game.height - 32, "4", {
+      font: "24px Arial black",
+      fill: "#ff0044",
+      align: "center"
+    });
+
+    this.musicNoteText.anchor.setTo(0, 0);
+    this.uiGroup.add(this.musicNoteText);
 
     this.gotScrollText = game.add.text(game.width - 20, 20, "0", {
       font: "30px Arial black",
@@ -61,6 +84,7 @@ class State extends Phaser.State {
       align: "center"
     });
     this.gotScrollText.anchor.setTo(1, 0);
+    this.uiGroup.add(this.gotScrollText);
 
     this.winText = game.add.text(game.width / 2, game.height / 2, "You Win!", {
       font: "60px Arial black",
@@ -70,6 +94,16 @@ class State extends Phaser.State {
       align: "center",
     });
     this.winText.anchor.setTo(0.5);
+    this.uiGroup.add(this.winText);
+    this.winTextMinor = game.add.text(0, 60, "", {
+      font: "20px Arial black",
+      fill: "#00ff44",
+      stroke: "#118e00",
+      strokeThickness: 2,
+      align: "center",
+    });
+    this.winTextMinor.anchor.setTo(0.5);
+    this.winText.addChild(this.winTextMinor);
     this.winText.visible = false;
 
     this.finishWinText = game.add.text(game.width / 2, game.height / 2, "All Cleared!\nYou Win!", {
@@ -81,9 +115,29 @@ class State extends Phaser.State {
     });
     this.finishWinText.anchor.setTo(0.5);
     this.finishWinText.visible = false;
+    this.uiGroup.add(this.finishWinText);
 
 
-    game.stage.backgroundColor = "#4488AA";
+    this.loseText = game.add.text(game.width / 2, game.height / 2, "Game Over", {
+      font: "120px Arial black",
+      fill: "#ff0044",
+      stroke: "#8e1100",
+      strokeThickness: 2,
+      align: "center",
+    });
+    this.loseText.anchor.setTo(0.5);
+    this.loseText.visible = false;
+    this.uiGroup.add(this.loseText);
+    this.loseTextMinor = game.add.text(0, 120, "Refresh browser to restart", {
+      font: "26px Arial black",
+      fill: "#ff0044",
+      stroke: "#8e1100",
+      strokeThickness: 2,
+      align: "center",
+    });
+    this.loseTextMinor.anchor.setTo(0.5);
+    this.loseText.addChild(this.loseTextMinor);
+    this.winText.visible = false;
 
     this.cursors = game.input.keyboard.createCursorKeys();
 
@@ -119,24 +173,47 @@ class State extends Phaser.State {
       currentMusicX += PLATFORM_WIDTH;
     }
 
+    this.micHintTimer = null;
+    this.micHint = game.add.image(50, game.height - 50, 'micHint');
+    this.micHint.anchor.setTo(0.5, 1);
+    this.micHint.scale.setTo(0.3);
+    this.micHint.visible = true;
+    if (this.micHintTimer) clearTimeout(this.micHintTimer);
+    this.intervalTimer = setInterval(() => {
+      this.micHint.visible = !this.micHint.visible;
+      
+    }, 1000);
+    setTimeout(() => {
+      clearInterval(this.intervalTimer);
+      this.micHint.visible = false;
+    }, 10000);
+
     this.player = game.add.sprite(PLATFORM_WIDTH / 2, 300, 'character');
+    this.arrowHint = game.add.image(30, -30, 'arrowHint');
+    this.arrowHint.anchor.setTo(0, 1);
+    this.arrowHint.scale.setTo(0.3);
+    this.player.addChild(this.arrowHint);
+    this.gameplayGroup.addChild(this.player);
+
     this.player.lifeCount = PLAYER_INIT_LIFE_COUNT;
+
     if (window.location.href.split('?')[1] == 'c') { this.player.lifeCount = PLAYER_CHEAT_LIFE_COUNT; }
+
+    this.lifeText.setText('Lives: ' + this.player.lifeCount);
 
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(this.player);
 
+    this.player.body.setRectangle(this.player.width * 0.85, this.player.height * 0.85);
     this.player.body.setCollisionGroup(this.playerCollisionGroup);
     this.player.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
     this.player.body.collides([this.deadCollisionGroup, this.scrollCollisionGroup, this.bossCollisionGroup]);
 
-
     //  Check for the block hitting another object
     this.player.body.onBeginContact.add(this.touchPlayer, this);
     this.deadzones = this.setupDeadZones();
-    this.scrolls = this.setup_level_1();
-    this.player.scollGot = 0;
-    this.scrollGoal = this.scrolls.length;
+    stageID = -1;
+    this.nextRoom();
 
     this.knifeIsCooldown = false;
 
@@ -186,6 +263,7 @@ class State extends Phaser.State {
     console.log('setup_level_1');
     var output = [];
     var scroll = game.add.sprite(1130, 150, 'scroll');
+    this.gameplayGroup.addChild(scroll);
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(scroll);
     scroll.body.static = true;
@@ -196,6 +274,7 @@ class State extends Phaser.State {
     this.knifeEnabled = true;
     //this.createFireballs();
 
+    roundEndText = 'Real challenges ahead!';
     return output
   }
 
@@ -207,6 +286,7 @@ class State extends Phaser.State {
 
     for (var i = 0; i < scrollCoord.length; i++) {
       var scroll = game.add.sprite(scrollCoord[i][0], scrollCoord[i][1], 'scroll');
+      this.gameplayGroup.addChild(scroll);
       //  Enable if for physics. This creates a default rectangular body.
       game.physics.p2.enable(scroll);
       scroll.body.static = true;
@@ -215,6 +295,7 @@ class State extends Phaser.State {
       scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
       output.push(scroll);
     }
+    roundEndText = 'Who is throwing all the katanas?!';
     return output
   }
 
@@ -227,6 +308,7 @@ class State extends Phaser.State {
     console.log('setup_level_3_stage_1');
     var output = [];
     var scroll = game.add.sprite(230, 150, 'scroll');
+    this.gameplayGroup.addChild(scroll);
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(scroll);
     scroll.body.static = true;
@@ -234,7 +316,12 @@ class State extends Phaser.State {
     scroll.body.setCollisionGroup(this.scrollCollisionGroup);
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
+    this.player.body.x = PLATFORM_WIDTH / 2;
+    this.player.body.y = 300;
+    this.player.body.setZeroVelocity();
+
     this.createBoss(1230, 360);
+    roundEndText = 'Collect all the scrolls and ...';
     return output
   }
 
@@ -242,6 +329,7 @@ class State extends Phaser.State {
     console.log('setup_level_3_stage_2');
     var output = [];
     var scroll = game.add.sprite(430, 280, 'scroll');
+    this.gameplayGroup.addChild(scroll);
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(scroll);
     scroll.body.static = true;
@@ -249,6 +337,7 @@ class State extends Phaser.State {
     scroll.body.setCollisionGroup(this.scrollCollisionGroup);
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
+    roundEndText = 'One more.';
     return output
   }
 
@@ -256,6 +345,7 @@ class State extends Phaser.State {
     console.log('setup_level_3_stage_3');
     var output = [];
     var scroll = game.add.sprite(830, 380, 'scroll');
+    this.gameplayGroup.addChild(scroll);
     //  Enable if for physics. This creates a default rectangular body.
     game.physics.p2.enable(scroll);
     scroll.body.static = true;
@@ -263,15 +353,19 @@ class State extends Phaser.State {
     scroll.body.setCollisionGroup(this.scrollCollisionGroup);
     scroll.body.collides([this.playerCollisionGroup, this.scrollCollisionGroup]);
     output.push(scroll);
+    roundEndText = 'Follow the arrow.';
     return output
   }
 
   createFireballs(no_of_fireballs = -1) {
     var count = 0;
     var sprFlag = 0;
+
+    var that = this;
     function make_fire_ball() {
       const y_index = getRandomInt(0, 11);
       const fireball = game.add.sprite(game.width, indexToGameHeight(y_index), sprFlag ? 'fireball1' : 'fireball2');
+      that.gameplayGroup.addChild(fireball);
       sprFlag = !sprFlag;
       game.physics.p2.enable(fireball);
       fireball.body.kinematic = true;
@@ -282,13 +376,14 @@ class State extends Phaser.State {
       if (no_of_fireballs < 0 || count < no_of_fireballs) that.fireballTimer = setTimeout(make_fire_ball, FIREBALL_INTERVAL);
       count++;
     }
-    var that = this;
+
     if (!this.fireballs) this.fireballs = [];
-    this.fireballTimer = setTimeout(make_fire_ball, FIREBALL_INTERVAL);
+    this.fireballTimer = setTimeout(make_fire_ball.bind(this), FIREBALL_INTERVAL);
   }
 
   createKnife(y_index) {
     const knife = game.add.sprite(game.width, indexToGameHeight(y_index), 'knife');
+    this.gameplayGroup.addChild(knife);
     game.physics.p2.enable(knife);
     knife.body.kinematic = true;
     knife.body.setCollisionGroup(this.deadCollisionGroup);
@@ -309,10 +404,13 @@ class State extends Phaser.State {
     const deadline_y = game.height - DEADLINE_HEIGHT / 2;
     while (currentX < game.width) {
       var deadzone = game.add.sprite(currentX, deadline_y, 'spears');
+      this.gameplayGroup.addChild(deadzone);
+
       deadzone.anchor.setTo(0, 0);
       game.physics.p2.enable(deadzone);
       deadzone.body.y = game.height - DEADLINE_HEIGHT / 2;
       deadzone.body.static = true;
+      deadzone.body.setRectangle(deadzone.width, deadzone.height - 15, 0, 15);
       deadzone.body.setCollisionGroup(this.deadCollisionGroup);
 
       deadzone.body.collides(this.playerCollisionGroup);
@@ -326,6 +424,7 @@ class State extends Phaser.State {
 
     if (this.cursors.left.isDown) {
       this.player.body.moveLeft(200);
+      this.arrowHint.alpha -= 0.05;
 
       // if (player.facing != 'left') {
       //   player.facing = 'left';
@@ -333,6 +432,7 @@ class State extends Phaser.State {
     }
     else if (this.cursors.right.isDown) {
       this.player.body.moveRight(200);
+      this.arrowHint.alpha -= 0.05;
 
       // if (player.facing != 'right') {
       //   player.facing = 'right';
@@ -349,6 +449,10 @@ class State extends Phaser.State {
 
       //   player.facing = 'idle';
       // }
+    }
+
+    if (this.arrowHint.alpha <= 0) {
+      this.arrowHint.destroy();
     }
 
     if (this.cursors.up.isDown && game.time.now > this.jumpTimer && this.checkIfCanJump()) {
@@ -390,26 +494,24 @@ class State extends Phaser.State {
     if (body && body.sprite && (body.sprite.key === 'spears' || body.sprite.key === 'knife') && !this.playerSuper) {
       console.log("spears or knife");
       this.player.lifeCount--;
-      this.lifeText.setText(this.player.lifeCount);
-      this.player.body.y = 30;
-      this.checkLose();
+      this.lifeText.setText('Lives: ' + this.player.lifeCount);
+      this.damageAndCheckLose();
     } else if (body && body.sprite && body.sprite.key === 'scroll') {
       console.log("scroll");
       this.getScroll();
       body.sprite.destroy();
     } if (body && body.sprite && (body.sprite.key === 'fireball1' || body.sprite.key === 'fireball2') && !this.playerSuper) {
       console.log("fireball");
-      this.player.lifeCount--;
-      this.lifeText.setText(this.player.lifeCount);
-      this.player.body.y = 30;
       body.sprite.destroy();
-      this.checkLose();
+      this.player.lifeCount--;
+      this.lifeText.setText('Lives: ' + this.player.lifeCount);
+      this.damageAndCheckLose();
     }
   }
 
   getScroll(sprite1, sprite2) {
     this.player.scollGot++;
-    this.gotScrollText.setText(this.player.scollGot);
+    this.gotScrollText.setText('Scrolls: ' + this.player.scollGot);
     console.log('getScroll', this.player.scollGot, this.scrollGoal);
 
     if (this.player.scollGot >= this.scrollGoal) {
@@ -426,8 +528,9 @@ class State extends Phaser.State {
       return;
     }
 
-
+    this.winTextMinor.setText(roundEndText);
     this.winText.visible = true;
+
 
     setTimeout(() => {
       this.winText.visible = false;
@@ -435,7 +538,7 @@ class State extends Phaser.State {
       this.cleanUp();
 
       this.nextRoom();
-    }, 2000);
+    }, 4000);
   }
 
   lose() {
@@ -443,9 +546,30 @@ class State extends Phaser.State {
     this.cleanUp();
   }
 
+  damageAndCheckLose() {
+    this.player.kill();
+    this.bloodBG.visible = true;
+    if (this.checkLose()) {
+      this.lose();
+      setTimeout(() => {
+        this.loseText.visible = true;
+
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        this.bloodBG.visible = false;
+        this.player.revive();
+        this.player.body.y = 30;
+        this.player.body.setZeroVelocity();
+      }, 1000);
+    }
+  }
+
   cleanUp() {
     console.log('cleanUp');
     this.player.scollGot = 0;
+    this.gotScrollText.setText('Scrolls: ' + this.player.scollGot);
+
   }
 
   nextRoom() {
@@ -453,15 +577,21 @@ class State extends Phaser.State {
     stageID++;
     this.scrolls = this[stageList[stageID]]();
     this.scrollGoal = this.scrolls.length;
+    this.player.scollGot = 0;
+    this.gotScrollText.setText('Scrolls: ' + this.player.scollGot);
+
   }
 
   checkLose() {
     if (this.player.lifeCount <= 0) {
       this.lose();
+      return true;
     }
+    return false;
   }
 
   finish() {
+    this.playerSuper = true;
     this.finishWinText.visible = true;
     this.cleanUp();
   }
@@ -472,20 +602,23 @@ class State extends Phaser.State {
     const normalized0 = y0Pitch;
     const normalized1 = y1Pitch;
     var index = Math.round(normalized0) % NUMBER_OF_PITCH;
+    this.musicNoteText.setText(soundModule.audioSource[0].label + ', ' + soundModule.audioSource[1].label + ' ' + soundModule.noteStrings[index]);
     var index1 = Math.round(normalized1) % NUMBER_OF_PITCH;
     //var singIndex = Math.round(normalized0 * 11);
     // console.log('noteStrings', soundModule.noteStrings[index]);
-    console.log('onSound', index);
+    // console.log('onSound', index);
     // normalized0, soundModule.noteStrings[singIndex],
     // normalized1, '');
     this.musicFloors.forEach((elem, id) => {
+
       if (index !== 0 && Math.abs(id - index) < 2) {
         // const heightLimit = 500 - y0Amplitude * 70;
+        console.log('up center id', id);
         const heightLimit = 500 - 400;
         if (elem.y > heightLimit) {
           // console.log('y0Amplitude', y0Amplitude);
 
-          elem.body.moveUp(300 * (y0Amplitude - 8) / 20);
+          elem.body.moveUp(300 * (y0Amplitude - 3) / 20);
         } else {
           elem.body.y = heightLimit;
           elem.body.setZeroVelocity();
@@ -511,10 +644,21 @@ class State extends Phaser.State {
         this.moveKnife(index1);
       }
     }
+    if (index > 0) {
+      this.micHint.visible = true;
+      if (this.micHintTimer) clearTimeout(this.micHintTimer);
+      this.micHintTimer = setTimeout(() => {
+        this.micHint.visible = false;
+
+      }, 1000);
+
+    }
   }
 
   createWall(x, y) {
     var wall = game.add.sprite(x, y, 'wall');
+    this.gameplayGroup.addChild(wall);
+
     game.physics.p2.enable(wall);
     wall.body.static = true;
 
@@ -525,6 +669,7 @@ class State extends Phaser.State {
 
   createMusicFloor(x, y) {
     var wall = game.add.sprite(x, y, 'wall');
+    this.gameplayGroup.addChild(wall);
     game.physics.p2.enable(wall);
     wall.body.kinematic = true;
 
@@ -535,6 +680,7 @@ class State extends Phaser.State {
 
   createBoss(x, y) {
     var boss = game.add.sprite(x, y, 'boss_ani', 'Comp1_00000');
+    this.gameplayGroup.addChild(boss);
     game.physics.p2.enable(boss);
     boss.body.setRectangle(560, 437);
     boss.body.kinematic = true;
@@ -543,7 +689,15 @@ class State extends Phaser.State {
     boss.body.collides([this.playerCollisionGroup, this.musicFloorCollisionGroup]);
     this.createFireballs();
   }
+
+  trasformBoss() {
+
+
+  }
 }
 
-var game = new Phaser.Game(
-  1280, 720, Phaser.AUTO, 'wrapper', new State());
+function createPhaser() {
+  document.querySelector('#title').style.display = "none";
+  game = new Phaser.Game(
+    1280, 720, Phaser.AUTO, 'wrapper', new State());
+}
