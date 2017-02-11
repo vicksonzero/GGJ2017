@@ -1,5 +1,5 @@
 soundModule = (function () {
-    var useArduinoMic = true;
+    var useArduinoMic = false;
     useArduinoMicBuffer = [];
 
     var SMOOTH_TICK_COUNT = 10;
@@ -104,26 +104,39 @@ soundModule = (function () {
     }
 
     // gets availale audio sources
-    MediaStreamTrack.getSources(function (sourceInfos) {
 
-        for (let i = 0; i != sourceInfos.length; ++i) {
-            var sourceInfo = sourceInfos[i];
-            if (sourceInfo.kind === 'audio') {
-                console.log(sourceInfo.id, sourceInfo.label || 'microphone');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        console.log("enumerateDevices() not supported.");
+        return;
+    }
 
-                audioSource.push(sourceInfo.id);
-                audioSourceExt.push(sourceInfo);
+    // List cameras and microphones.
+
+    (navigator.mediaDevices.enumerateDevices()
+        .then((devices) => {
+            devices.forEach((device) => {
+                console.log(`${device.kind}: ${device.label}, id=${device.deviceId}`);
+                if (device.kind === 'audioinput') {
+                    console.log(device.id, device.label || 'microphone');
+
+                    audioSource.push(device.id);
+                    audioSourceExt.push({ kind: device.kind, label: device.label, deviceId: device.deviceId });
+                }
+            });
+            console.log('audioSourceExt', audioSourceExt);
+
+        })
+        .then(() => {
+            // play with the sources
+            if (!navigator.mediaDevices.getUserMedia) {
+                console.log('getUserMedia not supported on your browser!');
+                return Promise.reject();
             }
-        }
-
-    });
-
-    // play with the sources
-    if (navigator.mediaDevices.getUserMedia) {
-        var syncLock = 0;
-        console.log('getUserMedia supported.');
+            var syncLock = 0;
+            console.log('getUserMedia supported.');
+        })
         // constraints - only audio needed for this app
-        Promise.resolve().then(() => {
+        .then(() => {
             return navigator.mediaDevices.getUserMedia({
                 audio: {
                     deviceId: { exact: audioSource[0] }
@@ -154,11 +167,11 @@ soundModule = (function () {
 
         }).then(() => {
             visualize();
-        });
-
-    } else {
-        console.log('getUserMedia not supported on your browser!');
-    }
+        })
+        .catch(function (err) {
+            console.log(err.name + ": " + err.message);
+        })
+    );
 
 
     function visualize() {
@@ -258,7 +271,7 @@ soundModule = (function () {
                     if (useArduinoMic) {
                         const avg1 = avg(y1smoothingCache.slice(-SMOOTH_TICK_COUNT));
                         console.log('Math.round(avg1 / 100 * 12)', Math.round(avg1 / 150 * 12));
-                        
+
                         y1Pitch = y[1] = Math.min(12, Math.round(avg1 / 150 * 12));
                     } else {
                         y1Pitch = y[1] = noteFromPitch(smoothed1[smoothed1.length - 1]);
@@ -394,6 +407,6 @@ soundModule = (function () {
 
     // event listeners to change visualize and voice settings
 
-    return { signal, noteStrings, audioSource: audioSourceExt };
+    return { signal, noteStrings, audioSource: () => audioSourceExt };
 
 } ());

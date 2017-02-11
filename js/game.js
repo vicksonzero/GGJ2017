@@ -631,7 +631,9 @@ class State extends Phaser.State {
     const normalized0 = y0Pitch;
     const normalized1 = y1Pitch;
     var index = Math.round(normalized0) % NUMBER_OF_PITCH;
-    this.musicNoteText.setText(soundModule.audioSource[0].label + ', ' + soundModule.audioSource[1].label + ' ' + soundModule.noteStrings[index]);
+    console.log('soundModule', soundModule);
+    
+    this.musicNoteText.setText(soundModule.audioSource()[0].label + ', ' + soundModule.audioSource()[1].label + ' ' + soundModule.noteStrings[index]);
     var index1 = Math.round(normalized1) % NUMBER_OF_PITCH;
     //var singIndex = Math.round(normalized0 * 11);
     // console.log('noteStrings', soundModule.noteStrings[index]);
